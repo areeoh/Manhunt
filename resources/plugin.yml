@@ -1,0 +1,8 @@
+name: ManHunt
+version: 1.0
+description: A Minecraft Manhunt Plugin based off of the popular series Minecraft Manhunt by Dream.
+author: Areeoh
+main: com.wtb.manhunt.Main
+commands:
+  manhunt:
+    description: Opens up a GUI for you to choose which team you would like to be.
