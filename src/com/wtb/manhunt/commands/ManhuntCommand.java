@@ -6,6 +6,7 @@ import com.wtb.manhunt.manhunt.PlayStyle;
 import com.wtb.manhunt.utility.UtilMath;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -23,21 +24,25 @@ public class ManhuntCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        if (!(sender instanceof Player)) {
-            if (args.length >= 1) {
+        if (args.length >= 1) {
+            if (sender.isOp()) {
                 if (args[0].equalsIgnoreCase("start")) {
                     startCommand(sender, args);
                 } else if (args[0].equalsIgnoreCase("stop")) {
                     stopCommand(sender, args);
+                } else if (args[0].equalsIgnoreCase("setspawn")) {
+                    if(sender instanceof Player) {
+                        setSpawnCommand((Player) sender, args);
+                    }
                 }
                 return false;
-            } else {
-                sender.sendMessage("[Error] Only players can run this command!");
             }
+        }
+        if (!(sender instanceof Player)) {
             return false;
         }
         Player player = (Player) sender;
-        if(main.getManhuntManager().isStarted()) {
+        if (main.getManhuntManager().isStarted()) {
             player.sendMessage(ChatColor.GRAY + "You cannot change your Play Style. The game has already started.");
             return false;
         }
@@ -56,7 +61,25 @@ public class ManhuntCommand implements CommandExecutor {
                 }
                 count--;
                 if (count <= 0) {
+                    if (main.getManhuntManager().getPlayerHandler().getPlayerMap().entrySet().stream().noneMatch(entry -> {
+                        Player player = Bukkit.getPlayer(entry.getKey());
+                        return player != null && !player.isDead() && entry.getValue() == PlayStyle.HUNTER;
+                    })) {
+                        Bukkit.broadcastMessage(ChatColor.RED + "The game failed to start! Not enough Hunters.");
+                        cancel();
+                        return;
+                    }
+                    if (main.getManhuntManager().getPlayerHandler().getPlayerMap().entrySet().stream().noneMatch(entry -> {
+                        Player player = Bukkit.getPlayer(entry.getKey());
+                        return player != null && !player.isDead() && entry.getValue() == PlayStyle.SPEED_RUNNER;
+                    })) {
+                        Bukkit.broadcastMessage(ChatColor.RED + "The game failed to start! Not enough Speed Runners.");
+                        cancel();
+                        return;
+                    }
+
                     Bukkit.broadcastMessage(ChatColor.GREEN + "Manhunt has begun! Good luck!");
+                    Bukkit.broadcastMessage(ChatColor.GREEN + "All hunters have been frozen for 10 seconds!");
                     for (Player online : Bukkit.getOnlinePlayers()) {
                         if (main.getManhuntManager().getPlayerHandler().getPlayStyle(online) == PlayStyle.NONE) {
                             main.getManhuntManager().getPlayerHandler().addPlayer(online, PlayStyle.SPECTATOR);
@@ -66,16 +89,24 @@ public class ManhuntCommand implements CommandExecutor {
                         online.setHealth(online.getAttribute(Attribute.GENERIC_MAX_HEALTH).getDefaultValue());
                         online.setFoodLevel(20);
                         online.setGameMode(main.getManhuntManager().getPlayerHandler().getPlayStyle(online).getGamemode());
+                        online.teleport(Bukkit.getWorld("world").getSpawnLocation());
                     }
-                    main.getManhuntManager().setStarted(true);
+                    main.getManhuntManager().setStartTime(System.currentTimeMillis());
                     cancel();
                 }
             }
         }.runTaskTimer(main, 0L, 20L);
     }
 
+    private void setSpawnCommand(Player player, String[] args) {
+        Location location = player.getLocation();
+        player.getWorld().setSpawnLocation(location);
+        player.sendMessage(ChatColor.GRAY + "Spawn point has been set at (" + ChatColor.GREEN + (int)location.getX() + ChatColor.GRAY + "," + ChatColor.GREEN + (int)location.getY() + ChatColor.GRAY + "," + ChatColor.GREEN + (int)location.getZ() + ChatColor.GRAY + ")");
+    }
+
     private void stopCommand(CommandSender sender, String[] args) {
-        main.getManhuntManager().setStarted(false);
+        main.getManhuntManager().setStartTime(0L);
+        Bukkit.broadcastMessage(ChatColor.GREEN + sender.getName() + ChatColor.GRAY + " has stopped the game!");
     }
 
     private void startCommand(CommandSender sender, String[] args) {

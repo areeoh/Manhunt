@@ -4,10 +4,10 @@ import com.wtb.manhunt.Main;
 
 public class ManhuntManager {
 
-    private boolean started = false;
-
     private final MenuHandler menuHandler;
     private final PlayerHandler playerHandler;
+
+    private long startTime = 0L;
 
     public ManhuntManager(Main main) {
         this.menuHandler = new MenuHandler(main);
@@ -23,10 +23,14 @@ public class ManhuntManager {
     }
 
     public boolean isStarted() {
-        return started;
+        return startTime != 0;
     }
 
-    public void setStarted(boolean started) {
-        this.started = started;
+    public long getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(long startTime) {
+        this.startTime = startTime;
     }
 }

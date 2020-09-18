@@ -12,7 +12,7 @@ public class Handler implements Listener {
         instance.getServer().getPluginManager().registerEvents(this, instance);
     }
 
-    public Main getInstance() {
+    protected Main getInstance() {
         return instance;
     }
 }
